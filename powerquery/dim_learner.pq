@@ -37,16 +37,8 @@ let
         Text.Contains([Folder Path], "Status of Learners")
     ),
     
-    // Step 3: Extract Track/Cohort name from folder path
-    AddTrack = Table.AddColumn(FilteredExcel, "track", each 
-        let
-            FolderPath = [Folder Path],
-            AfterData = Text.AfterDelimiter(FolderPath, "data\"),
-            TrackName = Text.BeforeDelimiter(AfterData, "\"),
-            CleanTrack = Text.Replace(TrackName, " Training", "")
-        in
-            CleanTrack
-    , type text),
+    // Step 3: Extract Track/Cohort name using helper function
+    AddTrack = Table.AddColumn(FilteredExcel, "track", each fxGetTrackName([Folder Path]), type text),
     
     // ========================================
     // PART B: Load and Process Each File
@@ -111,11 +103,24 @@ let
         "NameLookup",
         JoinKind.LeftOuter
     ),
-    ExpandedName = Table.ExpandTableColumn(MergedWithName, "NameLookup", {"learner_name"}, {"learner_name"}),
+    ExpandedName = Table.ExpandTableColumn(MergedWithName, "NameLookup", {"learner_name"}, {"learner_name_lookup"}),
     
-    // Step 15: Merge enrollment date
+    // Step 15: Generate Name from Email if lookup failed
+    AddDerivedName = Table.AddColumn(ExpandedName, "learner_name", each 
+        if [learner_name_lookup] <> null then [learner_name_lookup]
+        else 
+            let
+                // "james.williams@msc.com" -> "James Williams"
+                UserPart = Text.BeforeDelimiter([email], "@"),
+                CleanedUser = Text.Replace(Text.Replace(UserPart, ".", " "), "_", " "),
+                ProperName = Text.Proper(CleanedUser)
+            in
+                ProperName
+    , type text),
+
+    // Step 16: Merge enrollment date
     MergedWithEnrollment = Table.NestedJoin(
-        ExpandedName, {"email", "track"},
+        AddDerivedName, {"email", "track"},
         GroupedAttendance, {"email", "track"},
         "EnrollmentLookup",
         JoinKind.LeftOuter
@@ -126,9 +131,10 @@ let
     // PART D: Create Derived Fields
     // ========================================
     
-    // Step 16: Derive cohort from enrollment month-year (e.g., "Aug-2024")
+    // Step 17: Derive cohort from enrollment month-year (e.g., "Aug-2024")
+    // If no enrollment date (no attendance), default to "Unknown"
     AddCohort = Table.AddColumn(ExpandedEnrollment, "cohort", each 
-        if [enrollment_date] = null then null
+        if [enrollment_date] = null then "Unknown Cohort"
         else Date.ToText([enrollment_date], "MMM-yyyy")
     , type text),
     

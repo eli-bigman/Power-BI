@@ -61,7 +61,68 @@ graph TD
 
 ---
 
-## 🚀 Setup Guide
+## � Detailed Data Lineage & Logic
+
+This section explains exactly how each table is populated based on the current M-Code.
+
+### 1. Infrastructure
+
+- **`parameters.pq`**: Defines the `BasePath`.
+  - _Logic_: Hardcoded text string pointing to the Data directory. All other queries reference this.
+- **`fxGetTrackName.pq`**: Helper function.
+  - _Logic_: Takes a folder path. Finds the "Data" folder (case-insensitive) and extracts the _next_ folder name (e.g., `...\Data\AWSCloud Training\...` -> returns `AWSCloud`).
+
+### 2. Dimension Tables
+
+- **`dim_week.pq`**: The "Program Schedule".
+  - _Source_: Folder **Metadata** only (filenames/folder names).
+  - _Logic_: Scans `Zoom Attendance` folders. Extracts Week Number from folder name ("Week 1") and Date from filename ("2024-08-05.csv").
+  - _Aggregation_: Groups by Week Number to find the Min (Start) and Max (End) date for that week.
+  - _Performance_: Extremely fast because it never opens the actual CSV files.
+
+- **`dim_date.pq`**: The "Master Calendar".
+  - _Source_: `dim_week` and `fact_participation`.
+  - _Logic_:
+    1.  Gets the Program Start/End dates from `dim_week`.
+    2.  Gets the Actual Activity Start/End dates from `fact_participation`.
+    3.  Generates a continuous list of dates covering the full range of both.
+    4.  Adds standard attributes (Year, Month, Day, DayOfWeek, IsWeekend).
+
+- **`dim_learner.pq`**: The "Master Student List".
+  - _Source_: `Status of Learners` Excel files + `fact_attendance`.
+  - _Logic_:
+    1.  Loads all learners from the Status files (Enrollment List).
+    2.  **Enrichment**: Left Joins with `fact_attendance` to find the learner's Name (since Status files only have Email) and Enrollment Date (First Attendance).
+    3.  **Fallback**: If a learner has no attendance (Name is null), creates a "Derived Name" by formatting the email address (e.g., `john.doe@...` -> "John Doe").
+    4.  **Status**: Calculates `current_status` (Graduate, Certified, In Progress) based on Excel status columns.
+
+### 3. Fact Tables
+
+- **`fact_attendance.pq`**: Zoom Session Records.
+  - _Source_: Recursive scan of all CSVs in `Zoom Attendance`.
+  - _Logic_:
+    1.  Extracts Date from filename and Week from folder path.
+    2.  Parses `Duration`: Handles both "Total Minutes" (e.g., `66`) and "Time" (e.g., `1:06:00`) formats.
+    3.  Calculates `is_attended` flag (1 if duration > 30 mins, else 0).
+    4.  Links to `dim_learner` via Email.
+
+- **`fact_grades.pq`**: Lab and Quiz Scores.
+  - _Source_: `Labs & Quizzes` Excel files.
+  - _Logic_:
+    1.  Filters for "Labs" and "Quizzes" sheets.
+    2.  **Unpivots** the data: Turns horizontal columns ("Week 1", "Week 2"...) into vertical rows.
+    3.  Extracts numeric Week Number from the header text.
+
+- **`fact_participation.pq`**: Daily participation logs.
+  - _Source_: `Participation` Excel files.
+  - _Logic_:
+    1.  Splits the comma-separated `Participants` column into multiple rows (one per student).
+    2.  Parses the Date.
+    3.  **Mapping**: Merges with `fact_attendance` to find the Email Address for each Name (since Participation logs often lack emails).
+
+---
+
+## � Setup Guide
 
 ### 1. Prerequisites
 
@@ -71,7 +132,7 @@ Before pasting any query code, you must create the foundational elements that ot
   1.  Create a **New Blank Query** in Power Query Editor.
   2.  Name it `BasePath`.
   3.  Paste the code from `parameters.pq`.
-  4.  **Crucial**: Update the path string inside to valid location of your `Data` folder (e.g., `C:\Users\YourName\Documents\Power BI\Data`).
+  4.  **Crucial**: Update the path string inside to valid location of your `Data` folder.
 
 - **Step B: Add the Helper Function**
   1.  Create a **New Blank Query**.
@@ -80,39 +141,4 @@ Before pasting any query code, you must create the foundational elements that ot
 
 ### 2. Implementation
 
-Once the prerequisites are in place, create the following queries using the provided files:
-
-#### Dimension Tables
-
-| Query Name      | Source File      | Description                                                                                                                                                                              |
-| :-------------- | :--------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **dim_week**    | `dim_week.pq`    | **Metadata Driven**: Scans the folder names (e.g., "Week 1") in Zoom Attendance to define the program schedule. Does **not** read file contents, making it instant.                      |
-| **dim_date**    | `dim_date.pq`    | Generates a specific date range covering the entire program schedule found in `dim_week`, plus any outliers from Participation logs.                                                     |
-| **dim_learner** | `dim_learner.pq` | **Master List**: Sources primarily from "Status of Learners" files. Left-joins with Attendance only to find "Enrollment Date". Ensures you see students even if they have 0% attendance. |
-
-#### Fact Tables
-
-| Query Name             | Source File             | Description                                                                                                                                         |
-| :--------------------- | :---------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fact_attendance**    | `fact_attendance.pq`    | Reads every csv in the Zoom folders. Parses duration (H:MM:SS or Minutes), calculates `is_attended` (>30mins), and links to `dim_learner` by Email. |
-| **fact_grades**        | `fact_grades.pq`        | Unpivots Lab and Quiz scores from the weekly spreadsheets into a transactional format.                                                              |
-| **fact_participation** | `fact_participation.pq` | Parses the daily comma-separated lists of participants into individual rows.                                                                        |
-
----
-
-## 🛠️ Key Design Decisions
-
-### 1. Decoupling Dimensions
-
-- **Old Way**: `dim_learner` was built from `fact_attendance`. If a student never joined Zoom, they didn't exist in the report.
-- **New Way**: `dim_learner` is built from the **Status Files** (Enrollment List). Attendance is just an attribute. This allows reporting on "Dropouts who never attended".
-
-### 2. Folder Metadata vs. Content
-
-- `dim_week` used to open every single CSV to find the "Min/Max Date". This is slow.
-- Now, `dim_week` looks at the **File Name** (e.g., `2024-08-05.csv`) without opening the file. This reduces refresh time from minutes to seconds.
-
-### 3. Parameterization
-
-- Hardcoded paths (`C:\Users\Richard...`) have been removed from individual queries.
-- They are replaced by `BasePath`. You can now move your data folder anywhere, update **one query**, and everything works.
+Copy/paste the code from the respective `.pq` files into blank queries with the exact same names.
