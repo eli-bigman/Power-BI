@@ -21,6 +21,7 @@ This dashboard consolidates data from multiple sources (Zoom attendance, Labs/Qu
 
 ![Dashboard Overview](overview.png)
 
+![Schema overview](schema.png)
 
 ## Key Features
 
