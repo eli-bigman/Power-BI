@@ -51,7 +51,6 @@ For detailed documentation on the Power Query logic, see [powerquery/README.md](
 ## Project Structure
 
 - `powerquery/`: Contains documentation and M-code scripts for ETL.
-- `report_design.md`: Specifications for DAX measures and visual layout.
 - `instructions.txt`: Original project requirements.
 
 ## Getting Started
