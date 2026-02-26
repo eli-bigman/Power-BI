@@ -28,7 +28,9 @@ The report consists of two main pages designed for different levels of analysis.
 
 **Goal**: High-level summary of program health for stakeholders.
 
-![Dashboard Overview](overview.png)
+![Dashboard Overview](images/overview.png)
+
+![Dashboard Overview with Filters](images/overview_filter.png)
 
 **Key Metrics & Visuals**:
 
@@ -56,25 +58,57 @@ Incorporate slicers to allow users to filter the data based on the following dim
 - **Certification Type**: Filter by the type of certification (if applicable).
 - **Learner Status**: Filter by learners who are Certified or Not Certified.
 
+---
+
 ### 2. Learner Detail View
 
-**Goal**: Granular analysis tool for trainers to monitor individual student progress.
+**Goal**: Granular analysis tool for trainers to monitor individual student progress and identify at-risk learners.
 
-![Learner Details](learner_detail.png)
+![Learner Detail View](images/Learner_deatial.png)
 
-**Features**:
+![Learner Detail View with Filters](images/Learner_deatial_filter.png)
 
-- **Searchable Slicer**: Quickly find any student by typing their name in the "Search for a learner" box.
-- **Student Profile**:
-  - Selecting a student updates the top KPIs to show their specific **Avg Attendance Rate %**, **Participation Score**, and **Attendance Rate**.
-- **Detailed Matrix**:
-  - A comprehensive table listing every student with:
-    - **Total Hours Spent**: Time in Zoom sessions.
-    - **Total Sessions Attended**: Count of eligible sessions (>30 mins).
-    - **Avg Attendance Rate %**: Visual indicator of attendance health.
-    - **Avg Participation Score**: Metric of daily engagement.
-    - **Avg Assessment Score**: Combined Lab and Quiz performance.
-    - **Status Indicators**: "Graduated" and "Certified" flags (1/0).
+**Filter Panel (Left Sidebar):**
+
+| Filter                   | Options                               |
+| ------------------------ | ------------------------------------- |
+| **Cohort**               | Aug-2024                              |
+| **Track**                | AWSCloud / PowerBI                    |
+| **Month**                | August / September / October          |
+| **Week**                 | Week 1 / Week 2 / Week 3 / Week 4 ... |
+| **Certification Status** | Certified / Not Certified             |
+| **Graduation Status**    | Certified / Not Certified             |
+
+**Student Profile Header:**
+
+- **Student Name** — Displays the selected learner's full name (defaults to "Student Name" when no learner is selected).
+- **Student Track** — Displays the selected learner's track (defaults to "Student Track" when no learner is selected).
+
+**Summary Cards — Row 1:**
+
+| Card                           | Description                                           | Example Value |
+| ------------------------------ | ----------------------------------------------------- | ------------- |
+| **Labs Count**                 | Total number of labs completed by all learners        | 1K            |
+| **Average Labs Completed**     | Average number of labs completed per learner          | 10.00         |
+| **Total Hours Spent in Class** | Total hours each learner has spent attending sessions | 10.68K        |
+
+**Summary Cards — Row 2:**
+
+| Card                           | Description                                              | Example Value |
+| ------------------------------ | -------------------------------------------------------- | ------------- |
+| **Average Attendance Rate**    | The average attendance rate per learner                  | 94.07%        |
+| **Average Participation Rate** | The average participation rate based on daily engagement | 86.24%        |
+| **Average Assessment Score**   | Average score of all quizzes and labs per learner        | 50.81         |
+
+**Learner Details Table:**
+
+A comprehensive matrix listing every learner with the following columns:
+
+- **Learner Name**: Student full name (searchable via the dropdown slicer).
+- **Avg Participation Score**: Percentage of sessions in which the student actively participated.
+- **Avg Attendance Rate %**: Percentage of total sessions the student attended (> 30 min threshold).
+- **Avg Assessment Score**: Combined average of all Lab and Quiz scores.
+- **Total Row**: Shows aggregated figures across all visible learners.
 
 ---
 
@@ -82,5 +116,14 @@ Incorporate slicers to allow users to filter the data based on the following dim
 
 - **`Power-BI.pbix`**: The main Power BI report file.
 - **`powerquery/`**: Contains the source code for the ETL logic, ensuring the data model is robust and easy to maintain.
+- **`images/`**: Screenshots of each dashboard page used in this README.
 - **`instructions.txt`**: The original requirements document defining the scope of this project.
 - **`Data/`**: (Not included in repo) Local folder where raw data files should be placed.
+
+---
+
+## Data Model
+
+The data model follows a standard star schema with fact and dimension tables connected via surrogate keys.
+
+![Data Model Schema](images/schema.png)
