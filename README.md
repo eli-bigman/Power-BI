@@ -32,17 +32,29 @@ The report consists of two main pages designed for different levels of analysis.
 
 **Key Metrics & Visuals**:
 
-- **KPI Cards**:
-  - **Total Learners**: 140 (Active enrollment count)
-  - **Total Certifications**: 92 (Learners who passed certification)
-  - **Total Graduation**: 119 (Learners who completed the program)
-  - **Total Dropouts**: 21
-  - **Graduation Rate %**: 85.00%
-  - **Cert Conv. Rate %**: 77.31% (Conversion from Graduated to Certified)
-- **Visuals**:
-  - **Graduation by Track**: Bar chart comparing "Graduated", "Certified", and "Dropouts" across Tracks (PowerBI vs AWSCloud).
-  - **Attendance by Week**: Horizontal bar chart showing attendance trends over the 10-week program.
-  - **Average Assessment Scores**: Side-by-side comparison of Quiz and Lab scores by Track.
+**1. Bar Charts:**
+
+- **Graduation Rates**: Percentage of learners who graduated from each cohort.
+- **Certification Rates**: Percentage of learners who achieved certification.
+- **Dropout Rates**: Percentage of learners who dropped out of the program.
+- **Average Attendance**: Display the average percentage of total class time attended by learners.
+- **Average Participation**: Visualize the average engagement score based on daily participation.
+- **Average Assessment Scores**: Show the average quiz and lab scores for each cohort.
+
+**2. Cards (Summary Figures):**
+
+- **Total Certifications**: Display the number of learners who achieved certification.
+- **Total Learners**: Show the total number of learners enrolled across all cohorts.
+- **Total Dropouts**: Count the number of learners who dropped out before completing the program.
+- **Total Graduations**: Show the total number of learners who successfully graduated.
+
+**Filters:**
+Incorporate slicers to allow users to filter the data based on the following dimensions:
+
+- **Cohort**: Choose specific cohorts to view their performance.
+- **Track**: Filter by different tracks (e.g., Power BI, AWS Cloud).
+- **Certification Type**: Filter by the type of certification (if applicable).
+- **Learner Status**: Filter by learners who are Certified or Not Certified.
 
 ### 2. Learner Detail View
 
