@@ -28,7 +28,7 @@ The report consists of two main pages designed for different levels of analysis.
 
 **Goal**: High-level summary of program health for stakeholders.
 
-![Dashboard Overview](Overview.png)
+![Dashboard Overview](overview.png)
 
 **Key Metrics & Visuals**:
 
